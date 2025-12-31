@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feliz Año Nuevo Claudia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background: #000;
+        }
+        /* Overlay animado sutil para dar profundidad al fondo */
+        #bg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: screen;
+            background: linear-gradient(120deg, rgba(255,215,0,0.03), rgba(138,43,226,0.02));
+            animation: bgShift 12s ease-in-out infinite;
+        }
+
+        @keyframes bgShift {
+            0% { transform: translateY(0) scale(1); opacity: 0.9; }
+            50% { transform: translateY(-20px) scale(1.02); opacity: 1; }
+            100% { transform: translateY(0) scale(1); opacity: 0.9; }
+        }
+        
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        #title {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 3em;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            z-index: 10;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+            50% { text-shadow: 0 0 40px rgba(255, 215, 0, 1); }
+        }
+        
+        #message {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 1.2em;
+            text-align: center;
+            max-width: 80%;
+            display: none;
+            z-index: 10;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+        }
+        
+        #secret-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(139, 0, 139, 0.9);
+            color: #fff;
+            padding: 40px;
+            border-radius: 20px;
+            font-size: 1.5em;
+            text-align: center;
+            max-width: 90%;
+            display: none;
+            z-index: 100;
+            border: 3px solid #FFD700;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.8);
+        }
+        
+        #hint {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #FFD700;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            max-width: 250px;
+            z-index: 10;
+        }
+        
+        .close-btn {
+            margin-top: 20px;
+            padding: 10px 30px;
+            background: #FFD700;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        
+        .close-btn:hover {
+            background: #FFA500;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="title">🌟 Feliz y Próspero Año Nuevo Claudia 🌟</h1>
+    
+    <div id="hint">
+        💫 Haz clic en los planetas y corazones<br>
+        🔮 Encuentra la secuencia: Planeta → Corazón → Planeta → Corazón → Corazón
+    </div>
+    
+    <div id="message"></div>
+    
+    <div id="secret-message">
+        <h2>🎉 ¡Mensaje Secreto Desbloqueado! 🎉</h2>
+        <p style="margin: 20px 0;">Traduce lo siguiente de código ASCII a texto:</p>
+        <p style="font-family: monospace; font-size: 1.2em; color: #FFD700;">73 32 76 111 118 101 32 89 111 117</p>
+        <button class="close-btn" onclick="closeSecret()">Cerrar</button>
+    </div>
+    <div id="bg-overlay"></div>
+    
+    <canvas id="canvas"></canvas>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        // Limitamos pixel ratio para evitar render pesado en pantallas muy altas
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        
+        camera.position.z = 15;
+        
+        // Fondo de estrellas (optimizado: menos partículas y twinkle sutil)
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.08, sizeAttenuation: true, transparent: true });
+        const starsVertices = [];
+        // Reducimos el número de estrellas para mejor rendimiento
+        const STAR_COUNT = 600;
+        for (let i = 0; i < STAR_COUNT; i++) {
+            const x = (Math.random() - 0.5) * 100;
+            const y = (Math.random() - 0.5) * 100;
+            const z = (Math.random() - 0.5) * 100;
+            starsVertices.push(x, y, z);
+        }
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+        
+        // Luz
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
+        
+        // Objetos interactivos
+        const objects = [];
+        const messages = [
+            "¡Que este 2025 traiga abundancia y amor a tu vida! 💖",
+            "Eres una persona increíble, Claudia. ¡Sigue brillando! ✨",
+            "Que todos tus sueños se hagan realidad este año 🌟",
+            "Tu sonrisa ilumina el universo entero 😊",
+            "Que la felicidad te acompañe en cada paso 🌈",
+            "Eres más especial de lo que imaginas 💝",
+            "Este año será maravilloso para ti, lo sé 🎊",
+            "Que el amor y la paz llenen tu corazón 💕"
+        ];
+        
+        // Crear planetas (polígonos reducidos para mejorar rendimiento)
+        const planetColors = [0x4169E1, 0xFF6347, 0x32CD32, 0xFF69B4, 0x9370DB];
+        for (let i = 0; i < 4; i++) {
+            const geometry = new THREE.SphereGeometry(0.8, 16, 16);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: planetColors[i],
+                shininess: 100
+            });
+            const planet = new THREE.Mesh(geometry, material);
+            
+            const angle = (i / 4) * Math.PI * 2;
+            const radius = 8;
+            planet.position.x = Math.cos(angle) * radius;
+            planet.position.y = Math.sin(angle) * radius;
+            planet.position.z = Math.random() * 4 - 2;
+            
+            planet.userData = { 
+                type: 'planet', 
+                message: messages[i],
+                index: i
+            };
+            scene.add(planet);
+            objects.push(planet);
+        }
+        
+        // Crear corazones
+        for (let i = 0; i < 4; i++) {
+            const heartShape = new THREE.Shape();
+            heartShape.moveTo(0, 0);
+            heartShape.bezierCurveTo(0, -0.3, -0.6, -0.3, -0.6, 0);
+            heartShape.bezierCurveTo(-0.6, 0.3, 0, 0.6, 0, 1);
+            heartShape.bezierCurveTo(0, 0.6, 0.6, 0.3, 0.6, 0);
+            heartShape.bezierCurveTo(0.6, -0.3, 0, -0.3, 0, 0);
+            
+            // Menos profundidad y sin bevel para reducir coste geométrico
+            const extrudeSettings = { depth: 0.2, bevelEnabled: false };
+            const geometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+            const material = new THREE.MeshPhongMaterial({ color: 0xFF1493 });
+            const heart = new THREE.Mesh(geometry, material);
+            
+            const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+            const radius = 6;
+            heart.position.x = Math.cos(angle) * radius;
+            heart.position.y = Math.sin(angle) * radius;
+            heart.position.z = Math.random() * 4 - 2;
+            // Corazones un poco más grandes
+            heart.scale.set(1.0, 1.0, 1.0);
+            
+            heart.userData = { 
+                type: 'heart', 
+                message: messages[i + 4],
+                index: i
+            };
+            scene.add(heart);
+            objects.push(heart);
+        }
+        
+        // Sistema de secuencia para el easter egg
+        let sequence = [];
+        const correctSequence = ['planet', 'heart', 'planet', 'heart', 'heart'];
+        
+        // Raycaster para detectar clics
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        function onMouseClick(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objects);
+            
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                showMessage(obj.userData.message);
+                
+                // Agregar a la secuencia
+                sequence.push(obj.userData.type);
+                if (sequence.length > 5) sequence.shift();
+                
+                // Verificar secuencia correcta
+                if (sequence.length === 5 && 
+                    sequence.every((val, idx) => val === correctSequence[idx])) {
+                    showSecretMessage();
+                    sequence = [];
+                }
+                
+                // Animación de clic
+                const originalScale = obj.scale.x;
+                obj.scale.set(originalScale * 1.2, originalScale * 1.2, originalScale * 1.2);
+                setTimeout(() => {
+                    obj.scale.set(originalScale, originalScale, originalScale);
+                }, 200);
+            }
+        }
+        
+        function showMessage(text) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = text;
+            msgDiv.style.display = 'block';
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        function showSecretMessage() {
+            document.getElementById('secret-message').style.display = 'block';
+        }
+        
+        function closeSecret() {
+            document.getElementById('secret-message').style.display = 'none';
+        }
+        
+        window.addEventListener('click', onMouseClick);
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Animación
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotar objetos
+            objects.forEach((obj, i) => {
+                obj.rotation.x += 0.01;
+                obj.rotation.y += 0.01;
+                
+                // Movimiento orbital suave
+                const time = Date.now() * 0.0005;
+                const radius = obj.userData.type === 'planet' ? 8 : 6;
+                const speed = 0.3 + i * 0.1;
+                obj.position.x = Math.cos(time * speed + i) * radius;
+                obj.position.y = Math.sin(time * speed + i) * radius;
+            });
+            
+            // Rotar estrellas
+            stars.rotation.y += 0.0002;
+            // Twinkle sutil para las estrellas (cambia tamaño levemente)
+            const twinkle = 0.02 * Math.sin(Date.now() * 0.005 * 5);
+            stars.material.size = 0.08 + Math.abs(twinkle);
+
+            // Ligeramente mover cámara para dar sensación de profundidad
+            camera.position.z = 15 + Math.sin(Date.now() * 0.0003) * 0.6;
+            
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+    </script>
+</body>
+</html>
