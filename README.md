@@ -25,3 +25,19 @@ Notas y sugerencias
 
 Contacto
 - Si quieres más mejoras (música, más animaciones, o adaptarlo a móvil) dímelo y lo implemento.
+
+Desplegar en Render.com
+----------------------
+
+1. Crea una cuenta en https://render.com si no la tienes.
+2. En el panel de Render, crea un nuevo servicio `Web Service`.
+3. Conecta tu repositorio `josevillada-programmer/paginadeclau` desde GitHub.
+4. Configura los siguientes valores cuando Render pida información:
+	- Build Command: (dejar vacío) o `npm install`
+	- Start Command: `npm start`
+	- Environment: `Node 16`+ (puedes ajustar la versión si lo deseas)
+5. Render ejecutará `npm install` y después `npm start` — nuestro `server.js` servirá `index.html` y los archivos estáticos.
+
+Notas:
+- El proyecto ya incluye `package.json` con `express` y script `start`.
+- Si quieres publicar como sitio estático (sin Node) puedes usar `Static Site` en Render y subir los archivos de la carpeta raíz.
