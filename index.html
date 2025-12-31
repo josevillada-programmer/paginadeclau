@@ -343,5 +343,112 @@
         
         animate();
     </script>
+    <!-- YouTube player (background music) -->
+    <div id="yt-player" style="display:none"></div>
+    <div id="audio-control" aria-label="Audio controls" title="Control de música">
+        <button id="play-btn" aria-label="Play/Pause">⏯</button>
+        <button id="mute-btn" aria-label="Mute/Unmute">🔇</button>
+    </div>
+
+    <style>
+        #audio-control {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            z-index: 60;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(0,0,0,0.45);
+            padding: 6px;
+            border-radius: 8px;
+            pointer-events: auto;
+        }
+        #audio-control button {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #audio-control button:hover { background: rgba(255,255,255,0.05); }
+    </style>
+
+    <script>
+        // YouTube IFrame API loader
+        (function loadYouTubeAPI(){
+            var tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            document.head.appendChild(tag);
+        })();
+
+        let ytPlayer;
+        let playBtn = null;
+        let muteBtn = null;
+        const VIDEO_ID = '9i3JSA_8Oaw';
+
+        function onYouTubeIframeAPIReady() {
+            ytPlayer = new YT.Player('yt-player', {
+                height: '0',
+                width: '0',
+                videoId: VIDEO_ID,
+                playerVars: {
+                    autoplay: 1,
+                    controls: 0,
+                    rel: 0,
+                    loop: 1,
+                    playlist: VIDEO_ID,
+                    modestbranding: 1
+                },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            // Start muted to allow autoplay on most browsers
+            try {
+                ytPlayer.mute();
+                ytPlayer.playVideo();
+            } catch (e) { /* ignore */ }
+            enableAudioControls();
+        }
+
+        function enableAudioControls(){
+            playBtn = document.getElementById('play-btn');
+            muteBtn = document.getElementById('mute-btn');
+            if (!playBtn || !muteBtn) return;
+
+            playBtn.addEventListener('click', () => {
+                if (!ytPlayer) return;
+                const state = ytPlayer.getPlayerState();
+                if (state === YT.PlayerState.PLAYING) {
+                    ytPlayer.pauseVideo();
+                    playBtn.textContent = '▶';
+                } else {
+                    ytPlayer.playVideo();
+                    playBtn.textContent = '⏸';
+                }
+            });
+
+            muteBtn.addEventListener('click', () => {
+                if (!ytPlayer) return;
+                if (ytPlayer.isMuted()) {
+                    ytPlayer.unMute();
+                    muteBtn.textContent = '🔊';
+                } else {
+                    ytPlayer.mute();
+                    muteBtn.textContent = '🔇';
+                }
+            });
+
+            // Initial labels
+            playBtn.textContent = '⏯';
+            muteBtn.textContent = '🔇';
+        }
+    </script>
 </body>
 </html>
